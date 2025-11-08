@@ -19,8 +19,8 @@ app.get('/', (req, res) => {
   res.send('Precourse Badge Workshop Backend is running!');
 });
 
-const workshopRoutes = require('./routes/workshop');
-app.use('/api/workshop', workshopRoutes);
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
