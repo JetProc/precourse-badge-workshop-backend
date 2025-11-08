@@ -3,7 +3,7 @@ const router = express.Router();
 require('dotenv').config();
 
 const { createKakaoResponse } = require('../utils/kakaoResponse');
-const { START_AUTH_BLOCK_ID, CHECK_AUTH_BLOCK_ID, START_MATERIAL_BLOCK_ID } = require('../constants/blockId');
+const { START_AUTH_BLOCK_ID, CHECK_AUTH_BLOCK_ID, START_INPUT_BLOCK_ID } = require('../constants/blockId');
 const { requestGitHubDeviceCode, checkGitHubAccessToken } = require('../services/githubAuth');
 const { GITHUB_AUTH_URL } = require('../constants/url');
 
@@ -27,7 +27,7 @@ router.post('/start', async (req, res) => {
     if (existingAuthData && existingAuthData.status === 'verified') {
       const messages = [`${existingAuthData.githubId}님!\n이미 인증이 완료되었습니다.😎`];
       const data = { status: 'verified', githubId: existingAuthData.githubId };
-      const buttons = [{ label: '➡️ 다음 단계로', blockId: START_MATERIAL_BLOCK_ID }];
+      const buttons = [{ label: '➡️ 다음 단계로', blockId: START_INPUT_BLOCK_ID }];
 
       return res.status(200).json(createKakaoResponse(messages, data, buttons));
     }
@@ -93,7 +93,7 @@ router.post('/check-auth', async (req, res) => {
     if (authData.status === 'verified') {
       messages = [`${authData.githubId}님!\n이미 인증이 완료되었습니다.😎`];
       data = { status: 'verified', githubId: authData.githubId };
-      buttons = [{ label: '➡️ 다음 단계로', blockId: START_MATERIAL_BLOCK_ID }];
+      buttons = [{ label: '➡️ 다음 단계로', blockId: START_INPUT_BLOCK_ID }];
       return res.status(200).json(createKakaoResponse(messages, data, buttons));
     }
 
@@ -107,9 +107,9 @@ router.post('/check-auth', async (req, res) => {
       authData.githubId = githubId;
       await authData.save();
 
-      messages = [`인증이 완료되었습니다.✅\n${githubId}님 반갑습니다!🤗`];
+      messages = [`✅ 인증이 완료되었습니다 ✅\n${githubId}님 반갑습니다!🤗`];
       data = { status: 'verified', githubId: githubId };
-      buttons = [{ label: '➡️ 다음 단계로', blockId: START_MATERIAL_BLOCK_ID }];
+      buttons = [{ label: '➡️ 다음 단계로', blockId: START_INPUT_BLOCK_ID }];
 
       return res.status(200).json(createKakaoResponse(messages, data, buttons));
     } else {
