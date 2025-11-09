@@ -3,6 +3,9 @@ const router = express.Router();
 require('dotenv').config();
 
 const PrecourseSetting = require('../models/PrecourseSetting');
+const Participant = require('../models/Participant');
+
+const { VALIDATION } = require('../constants/messages');
 
 const createValidationResponse = (status, message) => {
   return {
@@ -12,38 +15,99 @@ const createValidationResponse = (status, message) => {
 };
 
 /**
- * POST /api/validation/class-year
+ * /api/validation/class-year
  * '기수' 파라미터를 검증합니다.
  */
 router.post('/class-year', async (req, res) => {
   try {
-    // 1. 카카오 검증 스킬이 보내주는 사용자 입력값을 받습니다.
     const userInput = req.body.utterance;
 
-    // 2. 숫자로 변환
-    const classYear = parseInt(userInput, 10);
-    // 3. 숫자가 아니거나 0 이하인 경우
-    if (isNaN(classYear) || classYear <= 0 || classYear >= 50) {
-      console.log(`[Validation FAIL] Invalid number: ${userInput}`);
-      return res.status(200).json(createValidationResponse('FAIL', '잘못된 형식입니다.😢\n\n'));
+    const numberRegex = /^[1-9]\d*$/;
+
+    if (!numberRegex.test(userInput)) {
+      console.log(`[Validation FAIL] Invalid format (not a positive integer): ${userInput}`);
+      return res.status(200).json(createValidationResponse('FAIL', VALIDATION.CLASS_YEAR_INVALID_FORMAT[0]));
     }
 
-    // 4. DB에서 해당 기수 정보가 있는지 확인
+    const classYear = parseInt(userInput, 10);
+
     const setting = await PrecourseSetting.findOne({ classYear: classYear });
 
     if (setting) {
-      // 5. (성공) DB에 기수 정보가 있음
       console.log(`[Validation SUCCESS] classYear: ${classYear} found.`);
       return res.status(200).json(createValidationResponse('SUCCESS'));
     } else {
-      // 6. (실패) DB에 기수 정보가 없음
       console.log(`[Validation FAIL] classYear: ${classYear} not found in DB.`);
-      return res.status(200).json(createValidationResponse('FAIL', '기수 정보가 없습니다.😢\n\n'));
+      return res.status(200).json(createValidationResponse('FAIL', VALIDATION.CLASS_YEAR_NOT_FOUND[0]));
     }
   } catch (error) {
     console.error('Error in /validation/class-year endpoint:', error.message);
-    // 검증 단계에서 500 에러가 나도 FAIL로 처리하여 사용자 입력을 다시 받음
-    return res.status(500).json(createValidationResponse('FAIL', '서버 오류입니다.🥲\n\n'));
+    return res.status(500).json(createValidationResponse('FAIL', VALIDATION.CLASS_YEAR_SERVER_ERROR[0]));
+  }
+});
+
+/**
+ * /api/validation/nickname
+ * '닉네임' 파라미터를 검증합니다.
+ */
+router.post('/nickname', async (req, res) => {
+  try {
+    const userInput = req.body.utterance;
+
+    const nicknameToValidate = userInput.toUpperCase();
+
+    if (nicknameToValidate.length < 1 || nicknameToValidate.length > 12) {
+      console.log(`[Validation FAIL] Nickname length out of range: ${userInput}`);
+      return res.status(200).json(createValidationResponse('FAIL', VALIDATION.NICKNAME_LENGTH[0]));
+    }
+
+    const validCharsRegex = /^[a-zA-Z0-9가-힣]*$/;
+    if (!validCharsRegex.test(nicknameToValidate)) {
+      console.log(`[Validation FAIL] Invalid characters in nickname: ${userInput}`);
+      return res.status(200).json(createValidationResponse('FAIL', VALIDATION.NICKNAME_INVALID_CHARS[0]));
+    }
+
+    const startsWithNumberRegex = /^[0-9]/;
+    if (startsWithNumberRegex.test(nicknameToValidate)) {
+      console.log(`[Validation FAIL] Nickname starts with a number: ${userInput}`);
+      return res.status(200).json(createValidationResponse('FAIL', VALIDATION.NICKNAME_STARTS_WITH_NUMBER[0]));
+    }
+
+    const existingParticipant = await Participant.findOne({
+      nickname: nicknameToValidate,
+    });
+
+    if (existingParticipant) {
+      console.log(`[Validation FAIL] Duplicate nickname: ${userInput}`);
+      return res.status(200).json(createValidationResponse('FAIL', VALIDATION.NICKNAME_DUPLICATE(userInput)[0]));
+    }
+
+    console.log(`[Validation SUCCESS] Nickname: ${userInput}`);
+    return res.status(200).json(createValidationResponse('SUCCESS'));
+  } catch (error) {
+    console.error('Error in /validation/nickname endpoint:', error.message);
+    return res.status(500).json(createValidationResponse('FAIL', VALIDATION.NICKNAME_SERVER_ERROR[0]));
+  }
+});
+
+/**
+ * /api/validation/yes-no
+ * '히든 질문 입력값'을 검증합니다.
+ */
+router.post('/yes-no', async (req, res) => {
+  try {
+    const userInput = req.body.utterance.toUpperCase();
+
+    if (userInput === 'Y' || userInput === 'N') {
+      console.log(`[Validation SUCCESS] Y/N input: ${userInput}`);
+      return res.status(200).json(createValidationResponse('SUCCESS'));
+    } else {
+      console.log(`[Validation FAIL] Invalid Y/N input: ${userInput}`);
+      return res.status(200).json(createValidationResponse('FAIL', VALIDATION.YES_NO_INVALID[0]));
+    }
+  } catch (error) {
+    console.error('Error in /validation/yes-no endpoint:', error.message);
+    return res.status(500).json(createValidationResponse('FAIL', VALIDATION.YES_NO_SERVER_ERROR[0]));
   }
 });
 

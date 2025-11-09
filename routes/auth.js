@@ -3,42 +3,42 @@ const router = express.Router();
 require('dotenv').config();
 
 const { createKakaoResponse } = require('../utils/kakaoResponse');
-const { START_AUTH_BLOCK_ID, CHECK_AUTH_BLOCK_ID, START_INPUT_BLOCK_ID } = require('../constants/blockId');
-const { requestGitHubDeviceCode, checkGitHubAccessToken } = require('../services/githubAuth');
+
+const { START_AUTH_BLOCK_ID, CHECK_AUTH_BLOCK_ID, USER_INFO_INPUT_BLOCK_ID } = require('../constants/blockId');
 const { GITHUB_AUTH_URL } = require('../constants/url');
+const { DEFAULT_AUTH_POLLING_TIME } = require('../constants/config');
+
+const { requestGitHubDeviceCode, checkGitHubAccessToken } = require('../services/githubAuth');
 
 const AuthSession = require('../models/AuthSession');
+const { COMMON_ERRORS, AUTH } = require('../constants/messages');
+const { getAuthSessionInfo } = require('../services/authService');
 
-const DEFAULT_POLLING_TIME = 5;
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 
 // POST /api/auth/start
 router.post('/start', async (req, res) => {
   try {
+    // 챗봇id 기반으로 이미 인증되었는지 확인
     const chatbotUserId = req.body.userRequest.user.id;
 
     if (!chatbotUserId) {
-      return res.status(400).json(createKakaoResponse('오류: 사용자 ID를 식별할 수 없습니다.'));
+      return res.status(200).json(createKakaoResponse(COMMON_ERRORS.USER_ID_NOT_FOUND));
     }
 
-    const existingAuthData = await AuthSession.findOne({ chatbotUserId: chatbotUserId });
+    const authData = await getAuthSessionInfo(chatbotUserId);
 
-    if (existingAuthData && existingAuthData.status === 'verified') {
-      const messages = [`${existingAuthData.githubId}님!\n이미 인증이 완료되었습니다.😎`];
-      const data = { status: 'verified', githubId: existingAuthData.githubId };
-      const buttons = [{ label: '➡️ 다음 단계로', blockId: START_INPUT_BLOCK_ID }];
-
+    // 인증되었다면 다음 단계로 넘어가기
+    if (authData && authData.status === 'verified') {
+      const messages = AUTH.START_ALREADY_VERIFIED(authData.githubId);
+      const data = { status: 'verified', githubId: authData.githubId };
+      const buttons = [{ label: '🎖️ 신규 훈장 제작하기', blockId: USER_INFO_INPUT_BLOCK_ID }];
       return res.status(200).json(createKakaoResponse(messages, data, buttons));
     }
 
-    const githubAuthResult = await requestGitHubDeviceCode(GITHUB_CLIENT_ID);
-
-    if (!githubAuthResult.success) {
-      return res.status(500).json(createKakaoResponse(['오류: GitHub 인증 시작 중 문제가 발생했습니다.']));
-    }
-
-    const { device_code, user_code, interval } = githubAuthResult;
+    // 인증되지 않았다면 인증하기
+    const { device_code, user_code, interval } = await requestGitHubDeviceCode(GITHUB_CLIENT_ID);
 
     await AuthSession.findOneAndUpdate(
       { chatbotUserId: chatbotUserId },
@@ -46,29 +46,21 @@ router.post('/start', async (req, res) => {
         device_code: device_code,
         status: 'pending',
         githubId: null,
-        interval: interval || DEFAULT_POLLING_TIME,
+        interval: interval || DEFAULT_AUTH_POLLING_TIME,
         expiresAt: new Date(Date.now() + 15 * 60 * 1000),
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    const messages = [
-      `훈장을 제작하기 위해선\nGitHub 본인 인증이 필요합니다!\n\nPC/모바일에서\n${GITHUB_AUTH_URL}\n에 접속해 아래 코드를 입력해주세요. 😎`,
-      `${user_code}`,
-      `인증이 완료 되었다면 아래의\n[✅ 인증 완료] 버튼을 눌러주세요!`,
-    ];
-
-    const data = {
-      user_code: user_code,
-      verification_uri: GITHUB_AUTH_URL,
-    };
-
-    const buttons = [{ label: '✅ 인증 완료', blockId: CHECK_AUTH_BLOCK_ID }];
-
-    res.status(200).json(createKakaoResponse(messages, data, buttons));
+    // 인증 확인 버튼 보내줘서 check-auth API 호출하도록 유도하기
+    res
+      .status(200)
+      .json(
+        createKakaoResponse(AUTH.START_PROMPT(user_code), {}, [{ label: '✅ 인증 완료', blockId: CHECK_AUTH_BLOCK_ID }])
+      );
   } catch (error) {
     console.error('Error in /start endpoint:', error.message);
-    res.status(500).json(createKakaoResponse(['오류: GitHub 인증 시작 중 문제가 발생했습니다.']));
+    res.status(500).json(createKakaoResponse(AUTH.START_ERROR));
   }
 });
 
@@ -77,69 +69,67 @@ router.post('/check-auth', async (req, res) => {
   try {
     const chatbotUserId = req.body.userRequest.user.id;
 
-    const authData = await AuthSession.findOne({ chatbotUserId: chatbotUserId });
+    const authData = await getAuthSessionInfo(chatbotUserId);
 
     let messages = [];
     let data = {};
     let buttons = [];
 
     if (!authData) {
-      messages = ['인증 세션이 없습니다.😥\n[🎖️ 신규 훈장 제작] 버튼을 다시 눌러주세요.'];
+      messages = AUTH.CHECK_NO_SESSION;
       data = { status: 'error' };
-      buttons = [{ label: '🎖️ 신규 훈장 제작', blockId: START_AUTH_BLOCK_ID }];
+      buttons = [{ label: '🎖️ 신규 훈장 제작하기', blockId: START_AUTH_BLOCK_ID }];
       return res.status(200).json(createKakaoResponse(messages, data, buttons));
     }
 
     if (authData.status === 'verified') {
-      messages = [`${authData.githubId}님!\n이미 인증이 완료되었습니다.😎`];
+      messages = AUTH.CHECK_ALREADY_VERIFIED(authData.githubId);
       data = { status: 'verified', githubId: authData.githubId };
-      buttons = [{ label: '➡️ 다음 단계로', blockId: START_INPUT_BLOCK_ID }];
+      buttons = [{ label: '➡️ 다음 단계로', blockId: USER_INFO_INPUT_BLOCK_ID }];
       return res.status(200).json(createKakaoResponse(messages, data, buttons));
     }
 
-    // 인증 로직
+    // 깃헙 인증 로직
     const githubAuthResult = await checkGitHubAccessToken(GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, authData.device_code);
 
+    // 인증 성공 시 DB 업데이트 및 다음 단계 진행
     if (githubAuthResult.success) {
       const { githubId } = githubAuthResult;
-
       authData.status = 'verified';
       authData.githubId = githubId;
       await authData.save();
 
-      messages = [`✅ 인증이 완료되었습니다 ✅\n${githubId}님 반갑습니다!🤗`];
+      messages = AUTH.CHECK_SUCCESS(githubId);
       data = { status: 'verified', githubId: githubId };
-      buttons = [{ label: '➡️ 다음 단계로', blockId: START_INPUT_BLOCK_ID }];
+      buttons = [{ label: '➡️ 다음 단계로', blockId: USER_INFO_INPUT_BLOCK_ID }];
 
       return res.status(200).json(createKakaoResponse(messages, data, buttons));
-    } else {
+    }
+    //인증 실패 시 에러 메시지 출력
+    else {
       const { error, error_description } = githubAuthResult;
 
       if (error === 'authorization_pending') {
-        messages = ['아직 사용자가 GitHub에서\n코드를 입력/승인하지 않았습니다...😥'];
+        messages = AUTH.CHECK_PENDING;
         data = { status: 'pending' };
         buttons = [{ label: '🔄 다시 확인하기', blockId: CHECK_AUTH_BLOCK_ID }];
       } else if (error === 'expired_token') {
-        messages = ['인증 시간이 초과되었습니다.\n처음부터 다시 시작해주세요.😓'];
+        messages = AUTH.CHECK_EXPIRED;
         data = { status: 'expired' };
-
         await AuthSession.deleteOne({ chatbotUserId: chatbotUserId });
-
         buttons = [{ label: '🏠 처음으로', blockId: START_AUTH_BLOCK_ID }];
       } else {
-        messages = [`인증 중 알 수 없는 오류가 발생했습니다. (${error_description || error})`];
+        messages = AUTH.CHECK_ERROR_UNKNOWN(error_description || error);
         data = { status: 'error' };
-
         authData.status = 'error';
         await authData.save();
-
         buttons = [{ label: '🏠 처음으로', blockId: START_AUTH_BLOCK_ID }];
       }
       return res.status(200).json(createKakaoResponse(messages, data, buttons));
     }
   } catch (error) {
     console.error('Error in /check-auth endpoint:', error.message);
-    res.status(500).json(createKakaoResponse(['오류: GitHub 인증 확인 중 문제가 발생했습니다.']));
+    res.status(500).json(createKakaoResponse(AUTH.CHECK_ERROR_INTERNAL));
   }
 });
 
