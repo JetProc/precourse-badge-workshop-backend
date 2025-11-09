@@ -4,8 +4,8 @@ const app = express();
 require('dotenv').config();
 
 const authRouter = require('./routes/auth');
-const dialogRouter = require('./routes/dialog');
 const validationRouter = require('./routes/validation');
+const workshopRouter = require('./routes/workshop');
 
 mongoose
   .connect(process.env.MONGO_URI)
@@ -15,8 +15,8 @@ mongoose
 app.use(express.json());
 
 app.use('/api/auth', authRouter);
-app.use('/api/dialog', dialogRouter);
 app.use('/api/validation', validationRouter);
+app.use('/api/workshop', workshopRouter);
 
 app.get('/', (req, res) => {
   res.status(200).send('Hello, Woowacourse Badge Workshop Backend!');
