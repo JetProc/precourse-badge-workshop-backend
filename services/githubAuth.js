@@ -1,11 +1,11 @@
 const axios = require('axios');
-const { GITHUB_DEVICE_CODE_AUTH_URL } = require('../constants/url');
+const { GITHUB_DEVICE_CODE_REQUEST_URL } = require('../constants/url');
 
 // GitHub Device Flow 인증을 시작하고 device_code, user_code 등을 받아옵니다.
 async function requestGitHubDeviceCode(clientId) {
   try {
     const response = await axios.post(
-      GITHUB_DEVICE_CODE_AUTH_URL,
+      GITHUB_DEVICE_CODE_REQUEST_URL,
       { client_id: clientId, scope: 'read:user' },
       { headers: { Accept: 'application/json' } }
     );
