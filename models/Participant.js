@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+// 히든 질문으로 얻는 값을 가진 스키마
 const InputsSchema = new Schema(
   {
     hiddenAnswers: {
@@ -16,6 +17,7 @@ const InputsSchema = new Schema(
   { _id: false }
 );
 
+// 깃헙 기반 이벤트로 얻는 값을 가진 스키마
 const StatsSchema = new Schema(
   {
     commitCount: { type: Number, default: 0 },
@@ -38,6 +40,7 @@ const StatsSchema = new Schema(
   { _id: false }
 );
 
+// 스탯을 종합하여 가공한 결과를 가진 스키마
 const ResultsSchema = new Schema(
   {
     grade: { type: String, default: 'bronze' },
@@ -48,6 +51,7 @@ const ResultsSchema = new Schema(
   { _id: false }
 );
 
+// 사용자가 수정/확인할 수 있는 정보를 가진 스키마
 const CustomizationSchema = new Schema(
   {
     equippedTitle: { type: String, default: '[프리코스 완주자]' },
@@ -56,6 +60,7 @@ const CustomizationSchema = new Schema(
   { _id: false }
 );
 
+// 사용자 정보가 담긴 종합 스키마
 const ParticipantSchema = new Schema(
   {
     githubId: { type: String, required: true, unique: true, index: true },

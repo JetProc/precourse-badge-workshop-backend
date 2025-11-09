@@ -1,5 +1,6 @@
+//업적 정의
 const ACHIEVEMENT_DEFINITIONS = {
-  // --- 1. 커밋 ---
+  // --- 1. 커밋 관련 ---
   commit_bronze: {
     name: '커밋_브론즈',
     description: '첫 번째 커밋을 달성했습니다. 시작이 반입니다!',
@@ -53,7 +54,7 @@ const ACHIEVEMENT_DEFINITIONS = {
     description: '프리코스 미션 마감일에 커밋했습니다.',
   },
 
-  // --- 2. 리뷰 ---
+  // --- 2. 리뷰 관련---
   review_bronze: {
     name: '코드 리뷰_브론즈',
     description: '첫 번째 코드 리뷰(코멘트)를 작성했습니다.',
@@ -99,7 +100,7 @@ const ACHIEVEMENT_DEFINITIONS = {
     description: '리뷰/코멘트에 10개 이상의 이모지를 사용했습니다. 🤖👍🎉',
   },
 
-  // --- 3. 시간 ---
+  // --- 3. 시간 관련 ---
   deadline_fighter: {
     name: '데드라인 파이터',
     description: '마감 1시간 전부터 마감 시간 직전 사이에 커밋했습니다. 짜릿한 승부!',
@@ -113,7 +114,7 @@ const ACHIEVEMENT_DEFINITIONS = {
     description: '자정에서 새벽 3시 사이에 1회 이상 커밋했습니다.',
   },
 
-  // --- 4. 프로세스 ---
+  // --- 4. 프로세스 관련 ---
   pr_opened: {
     name: '첫 PR',
     description: '첫 번째 Pull Request를 생성했습니다.',
@@ -127,7 +128,7 @@ const ACHIEVEMENT_DEFINITIONS = {
     description: '(히든) README.md 파일을 1000자 이상 상세하게 작성했습니다.',
   },
 
-  // --- 5. 커뮤니티 & 메타 ---
+  // --- 5. 커뮤니티 관련 ---
   blog_share: {
     name: '지식 공유자',
     description: '(히든) 프리코스 경험이나 학습한 지식을 블로그에 1회 이상 포스팅했습니다.',
@@ -142,6 +143,7 @@ const ACHIEVEMENT_DEFINITIONS = {
   },
 };
 
+//호칭 정의
 const TITLE_DEFINITIONS = {
   earlybird: '[새벽반]',
   nightowl: '[올빼미]',
