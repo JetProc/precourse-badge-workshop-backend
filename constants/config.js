@@ -1,0 +1,5 @@
+const DEFAULT_AUTH_POLLING_TIME = 5;
+
+module.exports = {
+  DEFAULT_AUTH_POLLING_TIME,
+};
