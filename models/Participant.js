@@ -71,6 +71,13 @@ const ParticipantSchema = new Schema(
     stats: { type: StatsSchema, required: true },
     results: { type: ResultsSchema, required: true },
     customization: { type: CustomizationSchema, required: true },
+
+    analysisStatus: {
+      type: String,
+      enum: ['pending', 'processing', 'completed', 'error'],
+      default: 'pending',
+      index: true,
+    },
   },
   {
     timestamps: true,
