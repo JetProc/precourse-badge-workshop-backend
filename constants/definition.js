@@ -57,7 +57,7 @@ const ACHIEVEMENT_DEFINITIONS = {
   // --- 2. 리뷰 관련---
   review_bronze: {
     name: '코드 리뷰_브론즈',
-    description: '첫 번째 코드 리뷰(코멘트)를 작성했습니다.',
+    description: '첫 번째 코드 리뷰를 작성했습니다.',
   },
   review_silver: {
     name: '코드 리뷰_실버',
@@ -106,7 +106,7 @@ const ACHIEVEMENT_DEFINITIONS = {
     description: '마감 1시간 전부터 마감 시간 직전 사이에 커밋했습니다. 짜릿한 승부!',
   },
   earlybird: {
-    name: '새벽반',
+    name: '얼리버드',
     description: '새벽 3시에서 6시 사이에 1회 이상 커밋했습니다.',
   },
   nightowl: {
@@ -143,9 +143,9 @@ const ACHIEVEMENT_DEFINITIONS = {
   },
 };
 
-//호칭 정의
+//칭호 정의
 const TITLE_DEFINITIONS = {
-  earlybird: '[새벽반]',
+  earlybird: '[얼리버드]',
   nightowl: '[올빼미]',
   commit_streak: '[꾸준함의 증표]',
   commit_gold: '[커밋 장인]',
@@ -155,7 +155,7 @@ const TITLE_DEFINITIONS = {
   blog_share: '[지식 공유자]',
   community_answerer: '[적극적인 참여자]',
   review_emoji_king: '[이모지 리액터]',
-  default: '[프리코스 완주자]', // 기본 호칭
+  default: '[프리코스 완주자]', // 기본 칭호
 };
 
 module.exports = { ACHIEVEMENT_DEFINITIONS, TITLE_DEFINITIONS };

@@ -1,14 +1,13 @@
-// constants/messages.js
-
 const { GITHUB_AUTH_URL } = require('./url');
 
 const AUTH = {
   // /start
   START_PROMPT: (user_code) => [
     `훈장을 제작하려면\n✨ GitHub 본인 인증 ✨\n이 필요해요!\n\nPC나 모바일에서\n${GITHUB_AUTH_URL}\n에 접속해 아래 코드를 입력해주세요. 😎`,
-    `아래 코드를 꾹 눌러 복사하여 사용하세요! 😉`,
     `${user_code}`,
-    `인증이 완료 되었다면 아래의\n[✅ 인증 완료] 버튼\n을 꾹! 눌러주세요! 😊`,
+    `처음이라면 깃허브 로그인을\n먼저 해야할 수도 있습니다! 🙂`,
+    `위의 코드를 꾹 눌러\n복사하여 깃허브에 붙여넣어주세요! 😉`,
+    `인증이 완료 되었다면 아래의\n[✅ 인증 완료] 버튼을 누르거나\n'인증 완료'라고 채팅창에 보내주세요! 😊`,
   ],
   START_ALREADY_VERIFIED: (githubId) => [
     `${githubId}님! 🥳\n이미 인증이 완료되었어요! 😎`,
@@ -31,7 +30,7 @@ const AUTH = {
 
 const VALIDATION = {
   // class-year
-  CLASS_YEAR_INVALID_FORMAT: ['❗ 기수(숫자)만 정확히 입력해주세요.\n(예: 8) 🔢\n\n'],
+  CLASS_YEAR_INVALID_FORMAT: ['❗ 기수(숫자)만 정확히 입력해주세요.\n\n'],
   CLASS_YEAR_NOT_FOUND: ['❗ 존재하지 않는 기수 정보입니다. 😢\n\n'],
   CLASS_YEAR_SERVER_ERROR: ['❗ 서버 오류가 발생했어요.', '잠시 후 다시 시도해주세요. 🥲\n\n'],
 
@@ -46,7 +45,7 @@ const VALIDATION = {
   NICKNAME_SERVER_ERROR: ['❗ 닉네임 검증 중 서버 오류가 발생했어요. 🥲\n\n'],
 
   // yes-no
-  YES_NO_INVALID: ['❗ Y 또는 N (혹은 예, 아니오)으로만 답변해주세요. 😥'],
+  YES_NO_INVALID: ['❗ y 또는 n으로만 답변해주세요. 😥\n\n'],
   YES_NO_SERVER_ERROR: ['❗ Y/N 검증 중 서버 오류가 발생했어요. 🥲\n\n'],
 };
 
@@ -54,32 +53,49 @@ const WORKSHOP = {
   // init-participant
   INIT_SUCCESS: (nickname) => [
     `${nickname}님, 환영합니다! 🎉`,
-    `이제부터 7개의 '히든 업적' 질문을 시작할게요.\n(Y/N)으로 답해주세요. 📝`,
+    `이제부터는 깃헙 기록만으론 알 수 없는\n7개의 '히든 활동' 질문을 시작할게요.\n\n솔직하게 질문에 답하며 프리코스를 되돌아볼까요?\n`,
+    `답은 (y/n)으로 해주세요! 📝`,
   ],
   INIT_ERROR: ['앗! 😵 초기 설정 중', '서버 오류가 발생했어요.\n잠시 후 다시 시도해주세요. 😥'],
 
   // setHiddenInfo
   SET_HIDDEN_SUCCESS: [
-    '모든 히든 질문에 답변해주셔서 감사합니다! 👏',
+    '모든 히든 질문에 답변해주셔서 감사합니다!\n당신은 훈장 받을 자격이 있군요!👏',
     "마지막으로 '제작 후기(회고)'를 한마디 적어주세요. ✍️",
   ],
   SET_HIDDEN_ERROR: ['앗! 😵 히든 업적 저장 중', '서버 오류가 발생했어요.\n잠시 후 다시 시도해주세요. 😥'],
 
   // setReflection
   SET_REFLECTION_EMPTY: ['회고 내용이 비어있어요. 🙁', '한 글자 이상 입력해주세요. ✍️'],
-  SET_REFLECTION_SUCCESS: [
-    `감사합니다! 회고가 성공적으로 저장되었어요. ✅`,
-    `이제 모든 훈장 재료가 준비되었습니다! 🥳`,
-    `[🏭 훈장 맡기기] 버튼을 눌러\nGitHub 활동 분석을 시작해주세요!\n(약 1~2분 소요) ⏳`,
+  SET_REFLECTION_SUCCESS: (nickname, statsMessage, achievementMessage, titleMessage) => [
+    `그렇군요!\n이제 모든 훈장 재료가 준비되었습니다! 🥳`,
+    `그전에, 프리코스 기간동안\n${nickname}님의 활동 내역입니다!\n\n${statsMessage}`,
+    `자, [🏭 훈장 맡기기] 버튼을 눌러\n최종 훈장을 확인해주세요!`,
   ],
   SET_REFLECTION_ERROR: ['앗! 😵 회고 저장 중', '서버 오류가 발생했어요.\n잠시 후 다시 시도해주세요. 😥'],
 
-  // order (final)
-  ORDER_SUCCESS: (nickname) => [
-    `${nickname}님의 훈장 제작이 완료되었어요! ✨`,
-    '아래 버튼을 눌러\n당신의 멋진 훈장을 확인해보세요! 🏆🎉',
+  ORDER_PENDING: [
+    '아직 훈장을 가공하고 있어요... 🧑‍🏭 (5~20초 소요)',
+    '잠시 후 [🏭 훈장 맡기기] 버튼을 다시 눌러주세요!',
+  ], // order (final)
+  ORDER_SUCCESS: (nickname, equippedTitle) => [
+    `${nickname}님의\n훈장 제작이 완료되었어요! ✨`,
+    // 업적/칭호 목록은 /submitOrder에서 동적으로 추가
+    `현재 칭호는 ${equippedTitle}(으)로 설정되어 있어요.`,
+    '다른 칭호로 변경하시겠어요?',
   ],
   ORDER_ERROR: ['앗! 😵 훈장 제작 중', '예상치 못한 오류가 발생했어요. 😥'],
+  ORDER_ERROR_NO_SETTING: ['앗! 😵 훈장 제작 중', '기수 정보(프리코스 일정)를 찾을 수 없어요.'],
+
+  GET_TITLES_SUCCESS: ['변경할 칭호를 선택해주세요. 👇'],
+
+  // setTitle (New)
+  SET_TITLE_SUCCESS: (title) => [
+    `당신의 칭호가\n${title}(으)로 설정되었습니다! 🥳`,
+    '이제 [🏆 내 훈장 보기] 버튼을 눌러\n최종 훈장을 확인해보세요!',
+  ],
+  SET_TITLE_INVALID: ['앗! 😅', '선택한 칭호가 획득한 칭호 목록에 없어요.\n다시 시도해주세요.'],
+  SET_TITLE_ERROR: ['앗! 😵 칭호 설정 중', '서버 오류가 발생했어요.\n잠시 후 다시 시도해주세요. 😥'],
 
   // my-data
   MY_DATA_SUCCESS: ['현재 설정된 정보를 성공적으로 불러왔습니다! 📋'],
@@ -88,7 +104,7 @@ const WORKSHOP = {
 
 const COMMON_ERRORS = {
   USER_ID_NOT_FOUND: ['오류: 사용자 ID를 식별할 수 없어요. 🧐'],
-  NOT_VERIFIED: ['인증 정보가 유효하지 않아요. 😥', '[🎖️ 신규 훈장 제작하기] 버튼\n을 다시 눌러 인증해주세요! 🚀'],
+  NOT_VERIFIED: ['인증 정보가 유효하지 않아요. 😥', '[🔓 깃헙 인증하러 가기] 버튼\n을 다시 눌러 인증해주세요! 🚀'],
   CAST_ERROR: ['잘못된 형식의 데이터가 전달되었어요. 😵', '다시 시도해주세요. 😥'],
   PARTICIPANT_NOT_FOUND: ['사용자 정보를 찾을 수 없어요. 😢', '다시 인증해주세요. 😥'],
   PARTICIPANT_NOT_CREATED: [
