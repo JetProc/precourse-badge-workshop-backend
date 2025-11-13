@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 require('dotenv').config();
 
+const { VALIDATION } = require('../constants/messages');
+
 const PrecourseSetting = require('../models/PrecourseSetting');
 const Participant = require('../models/Participant');
-
-const { VALIDATION } = require('../constants/messages');
 
 const createValidationResponse = (status, message) => {
   return {
@@ -15,11 +15,12 @@ const createValidationResponse = (status, message) => {
 };
 
 /**
- * /api/validation/class-year
- * '기수' 파라미터를 검증합니다.
+ * routes: /api/validation/class-year
+ * description: '기수' 파라미터를 검증합니다.
  */
 router.post('/class-year', async (req, res) => {
   try {
+    // 1. 검증할 값 호출 (사용자 발화로부터 추출)
     const userInput = req.body.utterance;
 
     const numberRegex = /^[1-9]\d*$/;
@@ -31,6 +32,7 @@ router.post('/class-year', async (req, res) => {
 
     const classYear = parseInt(userInput, 10);
 
+    // 2. 프리코스 세팅에 해당 기수가 있다면 SUCCESS, 없다면 FAIL
     const setting = await PrecourseSetting.findOne({ classYear: classYear });
 
     if (setting) {
@@ -47,15 +49,17 @@ router.post('/class-year', async (req, res) => {
 });
 
 /**
- * /api/validation/nickname
- * '닉네임' 파라미터를 검증합니다.
+ * routes: /api/validation/nickname
+ * description: '닉네임' 파라미터를 검증합니다.
  */
 router.post('/nickname', async (req, res) => {
   try {
+    // 1. 검증할 값 호출 (사용자 발화로부터 추출)
     const userInput = req.body.utterance;
 
     const nicknameToValidate = userInput.toUpperCase();
 
+    // 2. 조건에 맞는지 예외 처리 검증
     if (nicknameToValidate.length < 1 || nicknameToValidate.length > 12) {
       console.log(`[Validation FAIL] Nickname length out of range: ${userInput}`);
       return res.status(200).json(createValidationResponse('FAIL', VALIDATION.NICKNAME_LENGTH[0]));
@@ -91,13 +95,15 @@ router.post('/nickname', async (req, res) => {
 });
 
 /**
- * /api/validation/yes-no
- * '히든 질문 입력값'을 검증합니다.
+ * routes: /api/validation/yes-no
+ * description: '히든 질문 입력값'을 검증합니다.
  */
 router.post('/yes-no', async (req, res) => {
   try {
+    // 1. 검증할 값 호출 (사용자 발화로부터 추출)
     const userInput = req.body.utterance.toUpperCase();
 
+    // 2. y나 n일 때만 SUCCESS, 아니라면 FAIL
     if (userInput === 'Y' || userInput === 'N') {
       console.log(`[Validation SUCCESS] Y/N input: ${userInput}`);
       return res.status(200).json(createValidationResponse('SUCCESS'));
