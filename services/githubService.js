@@ -1,9 +1,25 @@
-const { GITHUB_API_URL } = require('../constants/url');
-
 const axios = require('axios');
+
 require('dotenv').config();
 
+const { GITHUB_API_URL } = require('../constants/url');
+
 const ADMIN_TOKEN = process.env.GITHUB_ADMIN_TOKEN;
+
+// GITHUB_ADMIN_TOKEN이 없는 경우, 서버 시작 시점에 즉시 에러 발생
+if (!ADMIN_TOKEN) {
+  console.error('[GitHub Service] GITHUB_ADMIN_TOKEN is not set.');
+  throw new Error('GitHub Admin Token이 설정되지 않았습니다.');
+}
+
+// 1. 공통 설정을 가진 axios 인스턴스 생성
+const githubApi = axios.create({
+  baseURL: GITHUB_API_URL,
+  headers: {
+    Authorization: `token ${ADMIN_TOKEN}`,
+    Accept: 'application/vnd.github.v3+json',
+  },
+});
 
 const getGithubEvents = async (githubId) => {
   let allEvents = [];
@@ -13,18 +29,10 @@ const getGithubEvents = async (githubId) => {
 
   console.log(`[GitHub Service] Start fetching events for ${githubId}...`);
 
-  if (!ADMIN_TOKEN) {
-    console.error('[GitHub Service] GITHUB_ADMIN_TOKEN is not set.');
-    throw new Error('GitHub Admin Token이 설정되지 않았습니다.');
-  }
-
   while (hasMoreData) {
     try {
-      const response = await axios.get(`${GITHUB_API_URL}/users/${githubId}/events`, {
-        headers: {
-          Authorization: `token ${ADMIN_TOKEN}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
+      // 2. 생성한 인스턴스(githubApi)를 사용하여 요청
+      const response = await githubApi.get(`/users/${githubId}/events`, {
         params: {
           page: page,
           per_page: perPage,
@@ -38,7 +46,6 @@ const getGithubEvents = async (githubId) => {
         hasMoreData = false;
       }
     } catch (error) {
-      // ===== ⬇️ 핵심 수정 부분 ⬇️ =====
       if (error.response && error.response.status === 422) {
         console.warn(`[GitHub Service] Pagination limit reached for ${githubId} (300 events). Stopping fetch.`);
         hasMoreData = false;
@@ -60,16 +67,9 @@ const getGithubEvents = async (githubId) => {
  * PR의 상세 정보 URL을 호출하여 전체 PR 객체를 가져옵니다.
  */
 const getPRDetails = async (prUrl) => {
-  if (!ADMIN_TOKEN) {
-    console.error('[GitHub Service] GITHUB_ADMIN_TOKEN is not set.');
-    return null;
-  }
   try {
     const response = await axios.get(prUrl, {
-      headers: {
-        Authorization: `token ${ADMIN_TOKEN}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
+      headers: githubApi.defaults.headers,
     });
     return response.data; // 상세 PR 객체 반환
   } catch (error) {
@@ -87,15 +87,10 @@ const getCommitsForPR = async (commitsUrl) => {
   const perPage = 100;
   let hasMoreData = true;
 
-  if (!ADMIN_TOKEN) return [];
-
   while (hasMoreData) {
     try {
       const response = await axios.get(commitsUrl, {
-        headers: {
-          Authorization: `token ${ADMIN_TOKEN}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
+        headers: githubApi.defaults.headers,
         params: { page: page, per_page: perPage },
       });
 
@@ -112,7 +107,6 @@ const getCommitsForPR = async (commitsUrl) => {
   }
   return allCommits;
 };
-// ===== ⬆️ [신규 함수 2] ⬆️ =====
 
 module.exports = {
   getGithubEvents,

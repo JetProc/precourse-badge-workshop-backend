@@ -3,6 +3,183 @@ const { TITLE_DEFINITIONS } = require('../constants/definition');
 
 const { getPRDetails, getCommitsForPR } = require('../services/githubService');
 
+// =================================================================
+// 헬퍼 함수 1: 리뷰/코멘트 이벤트 처리
+// =================================================================
+/**
+ * PullRequestReviewCommentEvent 또는 IssueCommentEvent를 처리합니다.
+ * reviewCount, reviewEmojiCount, reviewFastCount, reviewSelfCount를 계산하여 stats 객체를 수정합니다.
+ */
+function _handleReviewCommentEvent(event, eventDateKST, stats) {
+  // 리뷰는 'woowacourse-precourse' 키워드 레포만 필터링
+  if (!event.repo.name.includes(REPO_FILTER_KEYWORD)) {
+    return; // 관련 레포 아니면 종료
+  }
+
+  stats.reviewCount++;
+
+  const commentBody = event.payload.comment.body;
+
+  // 이모지 카운트
+  const emojiRegex = /:\+1:|:-1:|:laughing:|:confused:|:heart:|:hooray:|:rocket:|:eyes:/g;
+  const emojiMatches = commentBody.match(emojiRegex);
+  if (emojiMatches) {
+    stats.reviewEmojiCount += emojiMatches.length;
+  }
+
+  // review_fast (PR 생성 1시간 이내 리뷰)
+  if (event.type === 'PullRequestReviewCommentEvent' && event.payload.pull_request) {
+    const prCreatedAt = new Date(new Date(event.payload.pull_request.created_at).getTime() + 9 * 60 * 60 * 1000);
+    const reviewCreatedAt = eventDateKST; // KST로 변환된 시간 사용
+    const diffHours = (reviewCreatedAt - prCreatedAt) / (1000 * 60 * 60);
+    if (diffHours <= 1) {
+      stats.reviewFastCount++;
+    }
+  }
+
+  // review_self (자신 PR에 남긴 코멘트)
+  let eventCreator = null;
+  let prAuthor = null;
+
+  if (event.type === 'IssueCommentEvent') {
+    eventCreator = event.payload.comment?.user?.login;
+    if (event.payload.issue?.pull_request) {
+      prAuthor = event.payload.issue.user?.login;
+    }
+  } else if (event.type === 'PullRequestReviewCommentEvent') {
+    eventCreator = event.payload.comment?.user?.login;
+  }
+
+  if (prAuthor && eventCreator && eventCreator === prAuthor) {
+    stats.reviewSelfCount++;
+  }
+}
+
+// =================================================================
+// 헬퍼 함수 2: PR 이벤트 처리 (커밋 분석 포함)
+// =================================================================
+/**
+ * 'opened'된 PullRequestEvent를 비동기적으로 처리합니다.
+ * PR에 포함된 모든 커밋을 순회하며 stats 객체와
+ * commitDates, commitCountPerDay를 수정합니다.
+ */
+async function _handlePullRequestEvent(
+  event,
+  stats,
+  weekSchedule,
+  overallStartDate,
+  overallEndDate,
+  commitDates, // (수정을 위해 참조 전달)
+  commitCountPerDay // (수정을 위해 참조 전달)
+) {
+  // PR 생성도 'woowacourse-precourse' 키워드 레포만 필터링
+  if (!event.repo.name.includes(REPO_FILTER_KEYWORD)) {
+    return;
+  }
+
+  // "기간 내에 열린 PR"만 분석
+  if (event.payload.action === 'opened') {
+    stats.prOpened = true;
+
+    // 1. 이벤트 요약 정보에서 PR 상세 정보 URL 가져오기
+    const prSummary = event.payload.pull_request;
+
+    if (prSummary && prSummary.url) {
+      // 2. [API 2단계 호출] PR 상세 정보 가져오기
+      const fullPR = await getPRDetails(prSummary.url);
+
+      if (!fullPR || !fullPR.commits_url) return; // 상세 정보 없으면 스킵
+
+      // 3. [API 3단계 호출] 개별 커밋 목록 가져오기
+      const detailedCommits = await getCommitsForPR(fullPR.commits_url);
+
+      // 4. 총 커밋 수 집계 (상세 정보의 .commits가 가장 정확)
+      stats.commitCount += fullPR.commits;
+
+      // 5. 개별 커밋 순회
+      for (const commitData of detailedCommits) {
+        const message = commitData.commit.message.toLowerCase();
+        // 커밋 작성자/승인자 날짜 중 유효한 것 사용
+        const commitTimestamp = commitData.commit.author?.date || commitData.commit.committer?.date;
+        if (!commitTimestamp) continue;
+
+        const commitDate = new Date(new Date(commitTimestamp).getTime() + 9 * 60 * 60 * 1000);
+
+        // 6. 개별 커밋이 프리코스 기간 내인지 다시 확인
+        if (commitDate < overallStartDate || commitDate > overallEndDate) {
+          continue;
+        }
+
+        const commitHour = commitDate.getUTCHours();
+        const commitDay = commitDate.getUTCDay();
+        const commitDateString = commitDate.toISOString().split('T')[0];
+
+        // --- 7. 모든 커밋 기반 스탯을 여기서 계산 ---
+
+        // refactor / fix
+        if (message.includes(COMMIT_KEYWORDS.REFACTOR)) {
+          stats.commitRefactorCount++;
+        }
+        if (message.includes(COMMIT_KEYWORDS.FIX)) {
+          stats.commitFixCount++;
+        }
+
+        // weekend
+        if (commitDay === 0 || commitDay === 6) {
+          stats.commitWeekendCount++;
+        }
+
+        // streak / monster (데이터 수집)
+        // [수정] 상위 스코프의 배열/객체를 직접 수정
+        commitDates.push(commitDateString);
+        commitCountPerDay[commitDateString] = (commitCountPerDay[commitDateString] || 0) + 1;
+
+        // time-based
+        if (commitHour >= TIME_ZONES.EARLY_BIRD_START && commitHour < TIME_ZONES.EARLY_BIRD_END) {
+          stats.earlybird = true;
+        }
+        if (commitHour >= TIME_ZONES.NIGHT_OWL_START && commitHour < TIME_ZONES.NIGHT_OWL_END) {
+          stats.nightowl = true;
+        }
+
+        // first/last day (전체 기간 기준)
+        if (commitDateString === overallStartDate.toISOString().split('T')[0]) {
+          stats.commitFirstDay = true;
+        }
+        if (commitDateString === overallEndDate.toISOString().split('T')[0]) {
+          stats.commitLastDay = true;
+        }
+
+        // deadline fighter (주차별 기간 기준)
+        for (const week of weekSchedule) {
+          const weekStartDate = new Date(week.startDate);
+          const weekEndDate = new Date(week.endDate);
+
+          // YYYY-MM-DD 형식으로 변환
+          const weekStartDateString = weekStartDate.toISOString().split('T')[0];
+          const weekEndDateString = weekEndDate.toISOString().split('T')[0];
+
+          // 1. 각 주차의 '첫날' 커밋 확인 (원본 코드 로직 유지)
+          if (commitDateString === weekStartDateString) {
+            stats.commitFirstDay = true;
+          }
+
+          // 2. 각 주차의 '마지막 날' 커밋 확인 (원본 코드 로직 유지)
+          if (commitDateString === weekEndDateString) {
+            stats.commitLastDay = true;
+          }
+
+          // 3. 각 주차의 '데드라인 파이터' 확인 (기존 로직)
+          const oneHourBeforeEnd = new Date(weekEndDate.getTime() - 60 * 60 * 1000);
+          if (commitDate >= oneHourBeforeEnd && commitDate <= weekEndDate) {
+            stats.deadlineFighter = true;
+          }
+        }
+      } // end of individual commit loop
+    }
+  } // end of if (action === 'opened')
+}
+
 /**
  * [Async] GitHub 이벤트를 분석하여 통계를 계산합니다.
  */
@@ -33,6 +210,7 @@ async function analyzeGithubEvents(githubEvents, weekSchedule) {
   const overallStartDate = new Date(weekSchedule[0].startDate);
   const overallEndDate = new Date(weekSchedule[weekSchedule.length - 1].endDate);
 
+  // 헬퍼 함수가 수정할 수 있도록 외부에 선언
   const commitDates = []; // KST 기준 날짜(YYYY-MM-DD)를 저장할 배열
   const commitCountPerDay = {}; // 날짜별 커밋 수 ({"2025-11-01": 5, ...})
 
@@ -57,159 +235,24 @@ async function analyzeGithubEvents(githubEvents, weekSchedule) {
 
       case 'PullRequestReviewCommentEvent': // PR의 특정 코드 라인에 남긴 코멘트
       case 'IssueCommentEvent': {
-        // 리뷰는 'woowacourse-precourse' 키워드 레포만 필터링
-        if (!event.repo.name.includes(REPO_FILTER_KEYWORD)) {
-          break; // 관련 레포 아니면 다음 이벤트로
-        }
-
-        stats.reviewCount++;
-
-        const commentBody = event.payload.comment.body;
-
-        // 이모지 카운트
-        const emojiRegex = /:\+1:|:-1:|:laughing:|:confused:|:heart:|:hooray:|:rocket:|:eyes:/g;
-        const emojiMatches = commentBody.match(emojiRegex);
-        if (emojiMatches) {
-          stats.reviewEmojiCount += emojiMatches.length;
-        }
-
-        // review_fast (PR 생성 1시간 이내 리뷰)
-        if (event.type === 'PullRequestReviewCommentEvent' && event.payload.pull_request) {
-          const prCreatedAt = new Date(new Date(event.payload.pull_request.created_at).getTime() + 9 * 60 * 60 * 1000);
-          const reviewCreatedAt = eventDateKST; // KST로 변환된 시간 사용
-          const diffHours = (reviewCreatedAt - prCreatedAt) / (1000 * 60 * 60);
-          if (diffHours <= 1) {
-            stats.reviewFastCount++;
-          }
-        }
-
-        // review_self (자신 PR에 남긴 코멘트)
-        let eventCreator = null;
-        let prAuthor = null;
-
-        if (event.type === 'IssueCommentEvent') {
-          eventCreator = event.payload.comment?.user?.login;
-          if (event.payload.issue?.pull_request) {
-            prAuthor = event.payload.issue.user?.login;
-          }
-        } else if (event.type === 'PullRequestReviewCommentEvent') {
-          eventCreator = event.payload.comment?.user?.login;
-        }
-
-        if (prAuthor && eventCreator && eventCreator === prAuthor) {
-          stats.reviewSelfCount++;
-        }
-        // ===== ⬆️ [핵심 수정] ⬆️ =====
-
+        // [REFACTORED] 헬퍼 함수로 로직 이동
+        // (review_fast 계산을 위해 eventDateKST도 전달)
+        _handleReviewCommentEvent(event, eventDateKST, stats);
         break;
       }
 
       case 'PullRequestEvent': {
-        // PR 생성도 'woowacourse-precourse' 키워드 레포만 필터링
-        if (!event.repo.name.includes(REPO_FILTER_KEYWORD)) {
-          break;
-        }
-
-        // "기간 내에 열린 PR"만 분석
-        if (event.payload.action === 'opened') {
-          stats.prOpened = true;
-
-          // 1. 이벤트 요약 정보에서 PR 상세 정보 URL 가져오기
-          const prSummary = event.payload.pull_request;
-
-          if (prSummary && prSummary.url) {
-            // 2. [API 2단계 호출] PR 상세 정보 가져오기
-            const fullPR = await getPRDetails(prSummary.url);
-
-            if (!fullPR || !fullPR.commits_url) continue; // 상세 정보 없으면 스킵
-
-            // 3. [API 3단계 호출] 개별 커밋 목록 가져오기
-            const detailedCommits = await getCommitsForPR(fullPR.commits_url);
-
-            // 4. 총 커밋 수 집계 (상세 정보의 .commits가 가장 정확)
-            stats.commitCount += fullPR.commits;
-
-            // 5. 개별 커밋 순회
-            for (const commitData of detailedCommits) {
-              const message = commitData.commit.message.toLowerCase();
-              // 커밋 작성자/승인자 날짜 중 유효한 것 사용
-              const commitTimestamp = commitData.commit.author?.date || commitData.commit.committer?.date;
-              if (!commitTimestamp) continue;
-
-              const commitDate = new Date(new Date(commitTimestamp).getTime() + 9 * 60 * 60 * 1000);
-
-              // 6. 개별 커밋이 프리코스 기간 내인지 다시 확인
-              if (commitDate < overallStartDate || commitDate > overallEndDate) {
-                continue;
-              }
-
-              const commitHour = commitDate.getUTCHours();
-              const commitDay = commitDate.getUTCDay();
-              const commitDateString = commitDate.toISOString().split('T')[0];
-
-              // --- 7. 모든 커밋 기반 스탯을 여기서 계산 ---
-
-              // refactor / fix
-              if (message.includes(COMMIT_KEYWORDS.REFACTOR)) {
-                stats.commitRefactorCount++;
-              }
-              if (message.includes(COMMIT_KEYWORDS.FIX)) {
-                stats.commitFixCount++;
-              }
-
-              // weekend
-              if (commitDay === 0 || commitDay === 6) {
-                stats.commitWeekendCount++;
-              }
-
-              // streak / monster (데이터 수집)
-              commitDates.push(commitDateString);
-              commitCountPerDay[commitDateString] = (commitCountPerDay[commitDateString] || 0) + 1;
-
-              // time-based
-              if (commitHour >= TIME_ZONES.EARLY_BIRD_START && commitHour < TIME_ZONES.EARLY_BIRD_END) {
-                stats.earlybird = true;
-              }
-              if (commitHour >= TIME_ZONES.NIGHT_OWL_START && commitHour < TIME_ZONES.NIGHT_OWL_END) {
-                stats.nightowl = true;
-              }
-
-              // first/last day
-              if (commitDateString === overallStartDate.toISOString().split('T')[0]) {
-                stats.commitFirstDay = true;
-              }
-              if (commitDateString === overallEndDate.toISOString().split('T')[0]) {
-                stats.commitLastDay = true;
-              }
-
-              // deadline fighter
-              for (const week of weekSchedule) {
-                const weekStartDate = new Date(week.startDate);
-                const weekEndDate = new Date(week.endDate);
-
-                // YYYY-MM-DD 형식으로 변환
-                const weekStartDateString = weekStartDate.toISOString().split('T')[0];
-                const weekEndDateString = weekEndDate.toISOString().split('T')[0];
-
-                // 1. 각 주차의 '첫날' 커밋 확인
-                if (commitDateString === weekStartDateString) {
-                  stats.commitFirstDay = true;
-                }
-
-                // 2. 각 주차의 '마지막 날' 커밋 확인
-                if (commitDateString === weekEndDateString) {
-                  stats.commitLastDay = true;
-                }
-
-                // 3. 각 주차의 '데드라인 파이터' 확인 (기존 로직)
-                const oneHourBeforeEnd = new Date(weekEndDate.getTime() - 60 * 60 * 1000);
-                if (commitDate >= oneHourBeforeEnd && commitDate <= weekEndDate) {
-                  stats.deadlineFighter = true;
-                }
-              }
-            } // end of individual commit loop
-          }
-        } // end of if (action === 'opened')
+        // [REFACTORED] 헬퍼 함수로 로직 이동
+        // (commitDates, commitCountPerDay를 전달하여 헬퍼 함수가 수정하도록 함)
+        await _handlePullRequestEvent(
+          event,
+          stats,
+          weekSchedule,
+          overallStartDate,
+          overallEndDate,
+          commitDates, // 참조 전달
+          commitCountPerDay // 참조 전달
+        );
         break;
       }
     } // end of switch
@@ -248,6 +291,7 @@ async function analyzeGithubEvents(githubEvents, weekSchedule) {
 /**
  * 계산된 통계(stats)와 사용자 입력(hiddenAnswers)을 기반으로
  * 최종 업적, 칭호, 등급을 부여합니다.
+ * (이 함수는 원본과 동일하며, 변경 사항이 없습니다)
  */
 function calculateResults(stats, hiddenAnswers) {
   let achievements = [];
@@ -324,12 +368,12 @@ function calculateResults(stats, hiddenAnswers) {
   if (hiddenAnswers.community_answerer) addAchievement('community_answerer');
 
   // --- 3. 종합 등급(Grade) 계산 ---
-  let grade = 'bronze';
-  if (score >= 20) grade = 'silver';
-  if (score >= 35) grade = 'gold';
-  if (score >= 50) grade = 'platinum';
-  if (score >= 65) grade = 'diamond';
-  if (score >= 80) grade = 'master';
+  let grade = '🥉 bronze';
+  if (score >= 20) grade = '🥈 silver';
+  if (score >= 35) grade = '🥇 gold';
+  if (score >= 50) grade = '💿 platinum';
+  if (score >= 65) grade = '💎 diamond';
+  if (score >= 80) grade = '👑 master';
 
   return {
     grade: grade,
@@ -339,4 +383,7 @@ function calculateResults(stats, hiddenAnswers) {
   };
 }
 
-module.exports = { analyzeGithubEvents, calculateResults };
+module.exports = {
+  analyzeGithubEvents,
+  calculateResults,
+};
