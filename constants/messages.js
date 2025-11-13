@@ -3,10 +3,8 @@ const { GITHUB_AUTH_URL } = require('./url');
 const AUTH = {
   // /start
   START_PROMPT: (user_code) => [
-    `훈장을 제작하려면\n✨ GitHub 본인 인증 ✨\n이 필요해요!\n\nPC나 모바일에서\n${GITHUB_AUTH_URL}\n에 접속해 아래 코드를 입력해주세요. 😎`,
+    `훈장을 제작하려면\n✨ GitHub 본인 인증 ✨\n이 필요해요!\n\nPC나 모바일에서\n${GITHUB_AUTH_URL}\n에 접속해 아래 코드를 입력해주세요. 😎\n\n처음이라면 깃허브 로그인을\n먼저 해야할 수도 있습니다! 🙂\n\n아래 코드를 꾹 눌러 복사하여 깃허브에 붙여넣어주세요! 😉`,
     `${user_code}`,
-    `처음이라면 깃허브 로그인을\n먼저 해야할 수도 있습니다! 🙂`,
-    `위의 코드를 꾹 눌러\n복사하여 깃허브에 붙여넣어주세요! 😉`,
     `인증이 완료 되었다면 아래의\n[✅ 인증 완료] 버튼을 누르거나\n'인증 완료'라고 채팅창에 보내주세요! 😊`,
   ],
   START_ALREADY_VERIFIED: (githubId) => [
@@ -53,53 +51,71 @@ const WORKSHOP = {
   // init-participant
   INIT_SUCCESS: (nickname) => [
     `${nickname}님, 환영합니다! 🎉`,
-    `이제부터는 깃헙 기록만으론 알 수 없는\n7개의 '히든 활동' 질문을 시작할게요.\n\n솔직하게 질문에 답하며 프리코스를 되돌아볼까요?\n`,
+    `이제부터는 깃헙 기록만으론 알 수 없는\n7개의 '히든 활동' 질문을 시작할게요.\n\n솔직하게 질문에 답하면서 프리코스를 되돌아볼까요?`,
     `답은 (y/n)으로 해주세요! 📝`,
   ],
   INIT_ERROR: ['앗! 😵 초기 설정 중', '서버 오류가 발생했어요.\n잠시 후 다시 시도해주세요. 😥'],
 
   // setHiddenInfo
   SET_HIDDEN_SUCCESS: [
-    '모든 히든 질문에 답변해주셔서 감사합니다!\n당신은 훈장 받을 자격이 있군요!👏',
-    "마지막으로 '제작 후기(회고)'를 한마디 적어주세요. ✍️",
+    '질문에 답변해주셔서 감사합니다!\n당신은 훈장 받을 자격이 있는 것 같습니다!👏',
+    "마지막으로 [📝 회고 작성하기]버튼을 눌러\n'제작 후기(회고)'를 한마디 적어주세요. ✍️",
   ],
   SET_HIDDEN_ERROR: ['앗! 😵 히든 업적 저장 중', '서버 오류가 발생했어요.\n잠시 후 다시 시도해주세요. 😥'],
 
   // setReflection
   SET_REFLECTION_EMPTY: ['회고 내용이 비어있어요. 🙁', '한 글자 이상 입력해주세요. ✍️'],
-  SET_REFLECTION_SUCCESS: (nickname, statsMessage, achievementMessage, titleMessage) => [
-    `그렇군요!\n이제 모든 훈장 재료가 준비되었습니다! 🥳`,
-    `그전에, 프리코스 기간동안\n${nickname}님의 활동 내역입니다!\n\n${statsMessage}`,
-    `자, [🏭 훈장 맡기기] 버튼을 눌러\n최종 훈장을 확인해주세요!`,
+  SET_REFLECTION_SUCCESS: (nickname, statsMessage, grade, score, achievementMessage, titleMessage, equippedTitle) => [
+    // [말풍선 1: 인사, 스탯, 등급]
+    `그렇군요, ${nickname}님!\n이제 모든 준비를 마쳤습니다. 🥳\n\n훈장을 보기 전에 먼저\n프리코스 기간동안의 Github 활동 기록입니다!\n\n` +
+      `===== 📊 GitHub 활동 요약 =====\n${statsMessage}\n\n` +
+      // 등급 및 점수 표시
+      `===== 🏆 종합 등급 =====\n` +
+      `당신의 등급은 [ ${grade.toUpperCase()} ] 입니다!\n` +
+      `(총 ${score}점 획득)\n` +
+      `* 업적 1개당 5점씩 반영됩니다.`, //
+
+    // [말풍선 2: 업적 및 칭호]
+    `그리고 활동 기록에 따른 업적과 칭호입니다!\n\n===== ✨ 획득 업적 (${achievementMessage.count}개) =====\n${
+      achievementMessage.names || '없음'
+    }\n\n` + `===== ⭐ 획득 칭호 (${titleMessage.count}개) =====\n${titleMessage.names || '없음'}`,
+
+    // [말풍선 3: 칭호 설정 및 CTA]
+    `현재 칭호는\n${equippedTitle}\n(으)로 설정되어 있습니다.\n\n` + `다른 칭호로 변경하시겠어요?`,
+  ],
+  SET_REFLECTION_PENDING: [
+    '회고가 성공적으로 저장되었습니다. ✍️',
+    'GitHub 활동 분석이 아직 진행 중입니다. 🧑‍🏭 (약 5~10초 소요)',
+    '잠시 후 이 [회고 다시 제출] 버튼을 눌러주세요!',
   ],
   SET_REFLECTION_ERROR: ['앗! 😵 회고 저장 중', '서버 오류가 발생했어요.\n잠시 후 다시 시도해주세요. 😥'],
 
-  ORDER_PENDING: [
-    '아직 훈장을 가공하고 있어요... 🧑‍🏭 (5~20초 소요)',
-    '잠시 후 [🏭 훈장 맡기기] 버튼을 다시 눌러주세요!',
-  ], // order (final)
-  ORDER_SUCCESS: (nickname, equippedTitle) => [
-    `${nickname}님의\n훈장 제작이 완료되었어요! ✨`,
-    // 업적/칭호 목록은 /submitOrder에서 동적으로 추가
-    `현재 칭호는 ${equippedTitle}(으)로 설정되어 있어요.`,
-    '다른 칭호로 변경하시겠어요?',
+  STEP_SKIPPED_HIDDEN_QUESTIONS: [
+    '앗! 😵',
+    "이전 단계인 '히든 질문'을 먼저 완료해주세요!",
+    '버튼을 눌러 히든 질문 단계로 이동합니다. 👇',
   ],
+
+  ANALYSIS_PENDING: [
+    'GitHub 활동 분석이 아직 진행 중입니다. 🧑‍🏭 (약 5~10초 소요)',
+    '잠시 후 [✅ 분석 완료 확인] 버튼을 눌러주세요!',
+  ],
+
   ORDER_ERROR: ['앗! 😵 훈장 제작 중', '예상치 못한 오류가 발생했어요. 😥'],
-  ORDER_ERROR_NO_SETTING: ['앗! 😵 훈장 제작 중', '기수 정보(프리코스 일정)를 찾을 수 없어요.'],
 
   GET_TITLES_SUCCESS: ['변경할 칭호를 선택해주세요. 👇'],
 
-  // setTitle (New)
+  SET_TITLE_CANCELED: (title) => [
+    `칭호를 ${title}(으)로 유지합니다. 😌`,
+    `이제 [🏆 내 훈장 보러가기] 버튼을 눌러\n제작된 훈장 카드를 확인해보세요!`,
+  ],
+
   SET_TITLE_SUCCESS: (title) => [
-    `당신의 칭호가\n${title}(으)로 설정되었습니다! 🥳`,
-    '이제 [🏆 내 훈장 보기] 버튼을 눌러\n최종 훈장을 확인해보세요!',
+    `당신의 칭호가\n${title}\n(으)로 설정되었습니다! 🥳`,
+    `이제 [🏆 내 훈장 보러가기] 버튼을 눌러\n제작된 훈장 카드를 확인해보세요!`,
   ],
   SET_TITLE_INVALID: ['앗! 😅', '선택한 칭호가 획득한 칭호 목록에 없어요.\n다시 시도해주세요.'],
   SET_TITLE_ERROR: ['앗! 😵 칭호 설정 중', '서버 오류가 발생했어요.\n잠시 후 다시 시도해주세요. 😥'],
-
-  // my-data
-  MY_DATA_SUCCESS: ['현재 설정된 정보를 성공적으로 불러왔습니다! 📋'],
-  MY_DATA_ERROR: ['앗! 😵 정보를 불러오는 중', '오류가 발생했어요. 😥'],
 };
 
 const COMMON_ERRORS = {

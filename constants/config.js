@@ -1,5 +1,8 @@
 const DEFAULT_AUTH_POLLING_TIME = 5;
 
+const DEFAULT_TITLE_DEFINITION = '[프리코스 완주자]';
+
 module.exports = {
   DEFAULT_AUTH_POLLING_TIME,
+  DEFAULT_TITLE_DEFINITION,
 };
