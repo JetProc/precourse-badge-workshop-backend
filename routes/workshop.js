@@ -294,6 +294,7 @@ router.post('/setTitle', checkVerification, loadParticipant, checkAnalysisComple
     await participant.save();
 
     const webLinkUrl = generateBadgeUrl(participant);
+    console.log('1. weblinkurl:', webLinkUrl);
 
     return res
       .status(200)
@@ -316,6 +317,7 @@ router.post('/finish', checkVerification, loadParticipant, checkAnalysisComplete
     const { participant } = req;
 
     const webLinkUrl = generateBadgeUrl(participant);
+    console.log('1. weblinkurl:', webLinkUrl);
 
     return res
       .status(200)
