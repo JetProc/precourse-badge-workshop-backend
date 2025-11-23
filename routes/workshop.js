@@ -322,7 +322,7 @@ router.post('/finish', checkVerification, loadParticipant, checkAnalysisComplete
     return res
       .status(200)
       .json(
-        createKakaoResponse(WORKSHOP.SET_TITLE_CANCELED(participant.customization.equippedTitle), {}, [
+        createKakaoResponse(WORKSHOP.SET_TITLE_CANCELED, {}, [
           { label: '🏆 내 훈장 보러가기', action: 'webLink', webLinkUrl: webLinkUrl },
         ])
       );
