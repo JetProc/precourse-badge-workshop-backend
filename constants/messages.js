@@ -105,10 +105,7 @@ const WORKSHOP = {
 
   GET_TITLES_SUCCESS: ['변경할 칭호를 선택해주세요. 👇'],
 
-  SET_TITLE_CANCELED: (title) => [
-    `칭호를 ${title}(으)로 유지합니다. 😌`,
-    `이제 [🏆 내 훈장 보러가기] 버튼을 눌러\n제작된 훈장 카드를 확인해보세요!`,
-  ],
+  SET_TITLE_CANCELED: [` [🏆 내 훈장 보러가기] 버튼을 눌러\n제작된 훈장 카드를 확인해보세요!`],
 
   SET_TITLE_SUCCESS: (title) => [
     `당신의 칭호가\n${title}\n(으)로 설정되었습니다! 🥳`,
