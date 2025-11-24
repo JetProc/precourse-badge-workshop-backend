@@ -42,7 +42,7 @@ const checkAnalysisCompleted = (req, res, next) => {
     next();
   } else {
     console.error(`[Middleware ERROR] User ${participant.githubId} has unknown status: ${participant.analysisStatus}`);
-    return res.status(500).json(createKakaoResponse(WORKSHOP.ORDER_ERROR));
+    return res.status(200).json(createKakaoResponse(WORKSHOP.ORDER_ERROR));
   }
 };
 

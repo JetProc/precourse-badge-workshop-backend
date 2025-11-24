@@ -34,7 +34,7 @@ const checkVerification = async (req, res, next) => {
     }
 
     // 3) 요청 객체에 githubId 주입
-    req.githubId = githubId; //
+    req.githubId = githubId;
     next();
   } catch (error) {
     console.error('Error in checkVerification middleware:', error.message, error.stack);
@@ -43,14 +43,14 @@ const checkVerification = async (req, res, next) => {
 };
 
 /**
- * 3. 인증된 req.githubId를 기반으로 Participant 문서를 req.participant에 추가합니다.
+ * 2. 인증된 req.githubId를 기반으로 Participant 문서를 req.participant에 추가합니다.
  */
 const loadParticipant = async (req, res, next) => {
   try {
     // 1) 깃헙 아이디 유무 검증
     if (!req.githubId) {
       console.error('[Middleware Error] loadParticipant: req.githubId is missing. checkVerification must run first.');
-      return res.status(500).json(createKakaoResponse(COMMON_ERRORS.USER_ID_NOT_FOUND)); //
+      return res.status(200).json(createKakaoResponse(COMMON_ERRORS.USER_ID_NOT_FOUND)); //
     }
 
     // 2) 사용자 정보 유무 검증

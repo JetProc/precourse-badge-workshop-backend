@@ -22,7 +22,7 @@ app.use('/api/validation', validationRouter);
 app.use('/api/workshop', workshopRouter);
 
 app.get('/', (req, res) => {
-  res.status(200).send('Hello, Woowacourse Badge Workshop Backend!');
+  res.status(200).send('Hello, Precourse Badge Workshop Backend..! 🐶');
 });
 
 const PORT = process.env.PORT || 3000;

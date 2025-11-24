@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { GITHUB_DEVICE_CODE_REQUEST_URL } = require('../constants/url');
+const { GITHUB_DEVICE_CODE_REQUEST_URL, GITHUB_ACCESS_TOKEN_URL, GITHUB_USER_API_URL } = require('../constants/url');
 
 // GitHub Device Flow 인증을 시작하고 device_code, user_code 등을 받아옵니다.
 async function requestGitHubDeviceCode(clientId) {
@@ -20,7 +20,7 @@ async function requestGitHubDeviceCode(clientId) {
 async function checkGitHubAccessToken(clientId, clientSecret, deviceCode) {
   try {
     const response = await axios.post(
-      'https://github.com/login/oauth/access_token',
+      GITHUB_ACCESS_TOKEN_URL,
       {
         client_id: clientId,
         client_secret: clientSecret,
@@ -33,7 +33,7 @@ async function checkGitHubAccessToken(clientId, clientSecret, deviceCode) {
     const { access_token, error, error_description } = response.data;
 
     if (access_token) {
-      const userResponse = await axios.get('https://api.github.com/user', {
+      const userResponse = await axios.get(GITHUB_USER_API_URL, {
         headers: { Authorization: `token ${access_token}` },
       });
       const githubId = userResponse.data.login;

@@ -30,6 +30,7 @@ const { createCompletedResponse } = require('../services/workshopService');
 const { checkVerification, loadParticipant } = require('../middleware/auth');
 const { checkAnalysisCompleted, checkStatusForReview } = require('../middleware/workshop');
 
+// 프론트엔드를 위한 url 생성을 하는 함수
 function generateBadgeUrl(participant) {
   const compressedData = {
     nm: participant.nickname,
@@ -63,7 +64,7 @@ router.post('/setUserInfo', checkVerification, async (req, res) => {
     const parsedClassYear = parseInt(classYear, 10);
     const formattedNickname = nickname.toUpperCase();
 
-    // 2. Participant 모델에 데이터 저장 또는 업데이트 (upsert)
+    // Participant 모델에 데이터 저장 또는 업데이트 (upsert)
     const participant = await Participant.findOneAndUpdate(
       { githubId: req.githubId }, // 찾는 조건
       {
@@ -209,7 +210,7 @@ router.post('/setReview', checkVerification, loadParticipant, checkStatusForRevi
     }
   } catch (error) {
     console.error('Error in /setReview:', error.message);
-    res.status(500).json(createKakaoResponse(WORKSHOP.SET_REFLECTION_ERROR));
+    res.status(200).json(createKakaoResponse(WORKSHOP.SET_REFLECTION_ERROR));
   }
 });
 
@@ -247,7 +248,7 @@ router.post('/checkGithubAnalysisStatus', checkVerification, loadParticipant, as
     }
   } catch (error) {
     console.error('Error in /checkGithubAnalysisStatus:', error.message);
-    res.status(500).json(createKakaoResponse(WORKSHOP.SET_REFLECTION_ERROR));
+    res.status(200).json(createKakaoResponse(WORKSHOP.SET_REFLECTION_ERROR));
   }
 });
 
@@ -272,7 +273,7 @@ router.post('/getTitles', checkVerification, loadParticipant, checkAnalysisCompl
     return res.status(200).json(createKakaoResponse(WORKSHOP.GET_TITLES_SUCCESS, {}, buttons));
   } catch (error) {
     console.error('Error in /getTitles:', error.message);
-    res.status(500).json(createKakaoResponse(WORKSHOP.SET_TITLE_ERROR));
+    res.status(200).json(createKakaoResponse(WORKSHOP.SET_TITLE_ERROR));
   }
 });
 
@@ -313,7 +314,7 @@ router.post('/setTitle', checkVerification, loadParticipant, checkAnalysisComple
       );
   } catch (error) {
     console.error('Error in /setTitle:', error.message);
-    res.status(500).json(createKakaoResponse(WORKSHOP.SET_TITLE_ERROR));
+    res.status(200).json(createKakaoResponse(WORKSHOP.SET_TITLE_ERROR));
   }
 });
 
@@ -336,7 +337,7 @@ router.post('/finish', checkVerification, loadParticipant, checkAnalysisComplete
       );
   } catch (error) {
     console.error('Error in /finish:', error.message);
-    res.status(500).json(createKakaoResponse(WORKSHOP.SET_TITLE_ERROR));
+    res.status(200).json(createKakaoResponse(WORKSHOP.SET_TITLE_ERROR));
   }
 });
 

@@ -44,7 +44,7 @@ router.post('/class-year', async (req, res) => {
     }
   } catch (error) {
     console.error('Error in /validation/class-year endpoint:', error.message);
-    return res.status(500).json(createValidationResponse('FAIL', VALIDATION.CLASS_YEAR_SERVER_ERROR[0]));
+    return res.status(200).json(createValidationResponse('FAIL', VALIDATION.CLASS_YEAR_SERVER_ERROR[0]));
   }
 });
 
@@ -90,7 +90,7 @@ router.post('/nickname', async (req, res) => {
     return res.status(200).json(createValidationResponse('SUCCESS'));
   } catch (error) {
     console.error('Error in /validation/nickname endpoint:', error.message);
-    return res.status(500).json(createValidationResponse('FAIL', VALIDATION.NICKNAME_SERVER_ERROR[0]));
+    return res.status(200).json(createValidationResponse('FAIL', VALIDATION.NICKNAME_SERVER_ERROR[0]));
   }
 });
 
@@ -113,7 +113,7 @@ router.post('/yes-no', async (req, res) => {
     }
   } catch (error) {
     console.error('Error in /validation/yes-no endpoint:', error.message);
-    return res.status(500).json(createValidationResponse('FAIL', VALIDATION.YES_NO_SERVER_ERROR[0]));
+    return res.status(200).json(createValidationResponse('FAIL', VALIDATION.YES_NO_SERVER_ERROR[0]));
   }
 });
 

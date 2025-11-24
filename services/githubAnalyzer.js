@@ -13,7 +13,7 @@ const { getPRDetails, getCommitsForPR } = require('../services/githubService');
 function _handleReviewCommentEvent(event, eventDateKST, stats) {
   // 리뷰는 'woowacourse-precourse' 키워드 레포만 필터링
   if (!event.repo.name.includes(REPO_FILTER_KEYWORD)) {
-    return; // 관련 레포 아니면 종료
+    return;
   }
 
   stats.reviewCount++;
@@ -69,10 +69,10 @@ async function _handlePullRequestEvent(
   weekSchedule,
   overallStartDate,
   overallEndDate,
-  commitDates, // (수정을 위해 참조 전달)
-  commitCountPerDay // (수정을 위해 참조 전달)
+  commitDates,
+  commitCountPerDay
 ) {
-  // PR 생성도 'woowacourse-precourse' 키워드 레포만 필터링
+  // 'woowacourse-precourse' 키워드 레포만 필터링
   if (!event.repo.name.includes(REPO_FILTER_KEYWORD)) {
     return;
   }
@@ -93,7 +93,7 @@ async function _handlePullRequestEvent(
       // 3. [API 3단계 호출] 개별 커밋 목록 가져오기
       const detailedCommits = await getCommitsForPR(fullPR.commits_url);
 
-      // 4. 총 커밋 수 집계 (상세 정보의 .commits가 가장 정확)
+      // 4. 총 커밋 수 집계
       stats.commitCount += fullPR.commits;
 
       // 5. 개별 커밋 순회
@@ -105,7 +105,7 @@ async function _handlePullRequestEvent(
 
         const commitDate = new Date(new Date(commitTimestamp).getTime() + 9 * 60 * 60 * 1000);
 
-        // 6. 개별 커밋이 프리코스 기간 내인지 다시 확인
+        // 6. 개별 커밋이 프리코스 기간 내인지 확인
         if (commitDate < overallStartDate || commitDate > overallEndDate) {
           continue;
         }
@@ -114,7 +114,7 @@ async function _handlePullRequestEvent(
         const commitDay = commitDate.getUTCDay();
         const commitDateString = commitDate.toISOString().split('T')[0];
 
-        // --- 7. 모든 커밋 기반 스탯을 여기서 계산 ---
+        // --- 7. 모든 커밋 기반 스탯을 계산 ---
 
         // refactor / fix
         if (message.includes(COMMIT_KEYWORDS.REFACTOR)) {
@@ -130,7 +130,7 @@ async function _handlePullRequestEvent(
         }
 
         // streak / monster (데이터 수집)
-        // [수정] 상위 스코프의 배열/객체를 직접 수정
+        // 상위 스코프의 배열/객체를 직접 수정
         commitDates.push(commitDateString);
         commitCountPerDay[commitDateString] = (commitCountPerDay[commitDateString] || 0) + 1;
 
@@ -159,25 +159,25 @@ async function _handlePullRequestEvent(
           const weekStartDateString = weekStartDate.toISOString().split('T')[0];
           const weekEndDateString = weekEndDate.toISOString().split('T')[0];
 
-          // 1. 각 주차의 '첫날' 커밋 확인 (원본 코드 로직 유지)
+          // 1. 각 주차의 '첫날' 커밋 확인
           if (commitDateString === weekStartDateString) {
             stats.commitFirstDay = true;
           }
 
-          // 2. 각 주차의 '마지막 날' 커밋 확인 (원본 코드 로직 유지)
+          // 2. 각 주차의 '마지막 날' 커밋 확인
           if (commitDateString === weekEndDateString) {
             stats.commitLastDay = true;
           }
 
-          // 3. 각 주차의 '데드라인 파이터' 확인 (기존 로직)
+          // 3. 각 주차의 '데드라인 파이터' 확인
           const oneHourBeforeEnd = new Date(weekEndDate.getTime() - 60 * 60 * 1000);
           if (commitDate >= oneHourBeforeEnd && commitDate <= weekEndDate) {
             stats.deadlineFighter = true;
           }
         }
-      } // end of individual commit loop
+      }
     }
-  } // end of if (action === 'opened')
+  }
 }
 
 /**
@@ -210,7 +210,6 @@ async function analyzeGithubEvents(githubEvents, weekSchedule) {
   const overallStartDate = new Date(weekSchedule[0].startDate);
   const overallEndDate = new Date(weekSchedule[weekSchedule.length - 1].endDate);
 
-  // 헬퍼 함수가 수정할 수 있도록 외부에 선언
   const commitDates = []; // KST 기준 날짜(YYYY-MM-DD)를 저장할 배열
   const commitCountPerDay = {}; // 날짜별 커밋 수 ({"2025-11-01": 5, ...})
 
@@ -228,35 +227,30 @@ async function analyzeGithubEvents(githubEvents, weekSchedule) {
     // --- 2-3. 이벤트 타입별 상세 분석 ---
     switch (event.type) {
       case 'PushEvent': {
-        // PushEvent는 부정확하므로 커밋 관련 모든 집계에서 제외합니다.
-        // (시간대별 업적 등도 PullRequest의 개별 커밋에서 처리)
+        // PushEvent는 부정확하므로 커밋 관련 모든 집계에서 제외
         break;
       }
 
       case 'PullRequestReviewCommentEvent': // PR의 특정 코드 라인에 남긴 코멘트
       case 'IssueCommentEvent': {
-        // [REFACTORED] 헬퍼 함수로 로직 이동
-        // (review_fast 계산을 위해 eventDateKST도 전달)
         _handleReviewCommentEvent(event, eventDateKST, stats);
         break;
       }
 
       case 'PullRequestEvent': {
-        // [REFACTORED] 헬퍼 함수로 로직 이동
-        // (commitDates, commitCountPerDay를 전달하여 헬퍼 함수가 수정하도록 함)
         await _handlePullRequestEvent(
           event,
           stats,
           weekSchedule,
           overallStartDate,
           overallEndDate,
-          commitDates, // 참조 전달
-          commitCountPerDay // 참조 전달
+          commitDates,
+          commitCountPerDay
         );
         break;
       }
-    } // end of switch
-  } // end of event loop
+    }
+  }
 
   // --- 3. 2차 계산 (Streak, Monster) ---
 
@@ -291,7 +285,6 @@ async function analyzeGithubEvents(githubEvents, weekSchedule) {
 /**
  * 계산된 통계(stats)와 사용자 입력(hiddenAnswers)을 기반으로
  * 최종 업적, 칭호, 등급을 부여합니다.
- * (이 함수는 원본과 동일하며, 변경 사항이 없습니다)
  */
 function calculateResults(stats, hiddenAnswers) {
   let achievements = [];
@@ -308,7 +301,7 @@ function calculateResults(stats, hiddenAnswers) {
 
   // --- 1. 'stats' 기반 자동 업적 판정 ---
 
-  // [수정됨] 커밋 등급 (가장 높은 1개만)
+  // 커밋 등급
   if (stats.commitCount >= 150) {
     addAchievement('commit_master');
   } else if (stats.commitCount >= 110) {
@@ -332,7 +325,7 @@ function calculateResults(stats, hiddenAnswers) {
   if (stats.commitFirstDay) addAchievement('commit_first_day');
   if (stats.commitLastDay) addAchievement('commit_last_day');
 
-  // [수정됨] 리뷰 등급 (가장 높은 1개만)
+  // 리뷰 등급
   if (stats.reviewCount >= 100) {
     addAchievement('review_master');
   } else if (stats.reviewCount >= 70) {
@@ -369,11 +362,11 @@ function calculateResults(stats, hiddenAnswers) {
 
   // --- 3. 종합 등급(Grade) 계산 ---
   let grade = '🥉 bronze';
-  if (score >= 20) grade = '🥈 silver';
-  if (score >= 35) grade = '🥇 gold';
-  if (score >= 50) grade = '💿 platinum';
-  if (score >= 65) grade = '💎 diamond';
-  if (score >= 80) grade = '👑 master';
+  if (score >= 30) grade = '🥈 silver';
+  if (score >= 45) grade = '🥇 gold';
+  if (score >= 60) grade = '💿 platinum';
+  if (score >= 75) grade = '💎 diamond';
+  if (score >= 85) grade = '👑 master';
 
   return {
     grade: grade,

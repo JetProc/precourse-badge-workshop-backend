@@ -1,3 +1,7 @@
+/*
+ * 깃헙 분석을 위한 프리코스 기본 세팅값 관리
+ */
+
 const REPO_FILTER_KEYWORD = 'woowacourse-precourse';
 
 // 업적 계산에 사용될 커밋 메시지 키워드

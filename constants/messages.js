@@ -1,3 +1,7 @@
+/*
+ * 챗봇에서 사용되는 메시지 관리
+ */
+
 const { GITHUB_AUTH_URL } = require('./url');
 
 const AUTH = {
@@ -68,17 +72,14 @@ const WORKSHOP = {
     // [말풍선 1: 인사, 스탯, 등급]
     `그렇군요, ${nickname}님!\n이제 모든 준비를 마쳤습니다. 🥳\n\n훈장을 보기 전에 먼저\n프리코스 기간동안의 Github 활동 기록입니다!\n\n` +
       `===== 📊 GitHub 활동 요약 =====\n${statsMessage}\n\n` +
-      // 등급 및 점수 표시
       `===== 🏆 종합 등급 =====\n` +
       `당신의 등급은 [ ${grade.toUpperCase()} ] 입니다!\n` +
       `(총 ${score}점 획득)\n` +
-      // [말풍선 2: 업적 및 칭호]
       `그리고 활동 기록에 따른 업적과 칭호입니다!\n\n===== ✨ 획득 업적 (${achievementMessage.count}개) =====\n${
         achievementMessage.names || '없음'
       }\n\n` +
       `===== ⭐ 획득 칭호 (${titleMessage.count}개) =====\n${titleMessage.names || '없음'}`,
 
-    // [말풍선 3: 칭호 설정 및 CTA]
     `현재 칭호는\n${equippedTitle}\n(으)로 설정되어 있습니다.\n\n` + `다른 칭호로 변경하시겠어요?`,
   ],
   SET_REFLECTION_PENDING: [
@@ -88,29 +89,27 @@ const WORKSHOP = {
   ],
   SET_REFLECTION_ERROR: ['앗! 😵 회고 저장 중', '서버 오류가 발생했어요.\n잠시 후 다시 시도해주세요. 😥'],
 
-  STEP_SKIPPED_HIDDEN_QUESTIONS: [
-    '앗! 😵',
-    "이전 단계인 '히든 질문'을 먼저 완료해주세요!",
-    '버튼을 눌러 히든 질문 단계로 이동합니다. 👇',
-  ],
-
-  ANALYSIS_PENDING: [
-    'GitHub 활동 분석이 아직 진행 중입니다. 🧑‍🏭 (약 5~10초 소요)',
-    '잠시 후 [✅ 분석 완료 확인] 버튼을 눌러주세요!',
-  ],
-
-  ORDER_ERROR: ['앗! 😵 훈장 제작 중', '예상치 못한 오류가 발생했어요. 😥'],
-
+  // titles
   GET_TITLES_SUCCESS: ['변경할 칭호를 선택해주세요. 👇'],
-
   SET_TITLE_CANCELED: [` [🏆 내 훈장 보러가기] 버튼을 눌러\n제작된 훈장 카드를 확인해보세요!`],
-
   SET_TITLE_SUCCESS: (title) => [
     `당신의 칭호가\n${title}\n(으)로 설정되었습니다! 🥳`,
     `이제 [🏆 내 훈장 보러가기] 버튼을 눌러\n제작된 훈장 카드를 확인해보세요!`,
   ],
   SET_TITLE_INVALID: ['앗! 😅', '선택한 칭호가 획득한 칭호 목록에 없어요.\n다시 시도해주세요.'],
   SET_TITLE_ERROR: ['앗! 😵 칭호 설정 중', '서버 오류가 발생했어요.\n잠시 후 다시 시도해주세요. 😥'],
+
+  // etc
+  STEP_SKIPPED_HIDDEN_QUESTIONS: [
+    '앗! 😵',
+    "이전 단계인 '히든 질문'을 먼저 완료해주세요!",
+    '버튼을 눌러 히든 질문 단계로 이동합니다. 👇',
+  ],
+  ANALYSIS_PENDING: [
+    'GitHub 활동 분석이 아직 진행 중입니다. 🧑‍🏭 (약 5~10초 소요)',
+    '잠시 후 [✅ 분석 완료 확인] 버튼을 눌러주세요!',
+  ],
+  ORDER_ERROR: ['앗! 😵 훈장 제작 중', '예상치 못한 오류가 발생했어요. 😥'],
 };
 
 const COMMON_ERRORS = {

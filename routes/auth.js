@@ -64,7 +64,7 @@ router.post('/start', async (req, res) => {
       );
   } catch (error) {
     console.error('Error in /start endpoint:', error.message);
-    res.status(500).json(createKakaoResponse(AUTH.START_ERROR));
+    res.status(200).json(createKakaoResponse(AUTH.START_ERROR));
   }
 });
 
@@ -140,7 +140,7 @@ router.post('/check-auth', async (req, res) => {
     }
   } catch (error) {
     console.error('Error in /check-auth endpoint:', error.message);
-    res.status(500).json(createKakaoResponse(AUTH.CHECK_ERROR_INTERNAL));
+    res.status(200).json(createKakaoResponse(AUTH.CHECK_ERROR_INTERNAL));
   }
 });
 

@@ -1,4 +1,7 @@
-//업적 정의
+/*
+ * 업적과 칭호 관리
+ */
+
 const ACHIEVEMENT_DEFINITIONS = {
   // --- 1. 커밋 관련 ---
   commit_bronze: {
@@ -85,10 +88,10 @@ const ACHIEVEMENT_DEFINITIONS = {
   },
   review_thanked: {
     name: '(🔒) 💌 고마워요!',
-    description: '(히든) 작성한 리뷰가 동료에게 감사 인사를 받았습니다. 잠금 해제 시 반짝이는 하트 등장 💖',
+    description: '(히든) 작성한 리뷰가 동료에게 감사 인사를 받았습니다.',
   },
   review_study: {
-    name: '🕵️ 탐구하는 리뷰어',
+    name: '(🔒) 🕵️ 탐구하는 리뷰어',
     description: '(히든) 더 나은 리뷰를 위해 깊은 자료 탐색을 수행했습니다. ✨',
   },
   review_self: {

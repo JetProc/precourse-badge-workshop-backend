@@ -1,3 +1,7 @@
+/*
+ * 챗봇 개발 플랫폼에서 사용하는 blockId를 관리
+ */
+
 /* ===== 인증 관련 block ===== */
 // 깃헙 인증 시작
 const START_AUTH_BLOCK_ID = '690c35c5f582ee5b7cc1c415';
@@ -19,7 +23,9 @@ const CHECK_GITHUB_ANALYSIS_STATUS_BLOCK_ID = '6911ce5a0c3f687508832cf9';
 const SET_TITLE_BLOCK_ID = '6910a7f55eff070a5601856d';
 // 칭호 보기
 const GET_TITLE_BLOCK_ID = '69117530959f5c2e998aa89b';
-// 칭호 변경 스킵
+
+/* ===== 훈장 block ===== */
+// 훈장 보기
 const FINISH_FLOW_BLOCK_ID = '6911c9575eff070a5601e776';
 
 module.exports = {
