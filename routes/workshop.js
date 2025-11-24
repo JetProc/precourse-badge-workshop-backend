@@ -63,14 +63,27 @@ router.post('/setUserInfo', checkVerification, async (req, res) => {
     const parsedClassYear = parseInt(classYear, 10);
     const formattedNickname = nickname.toUpperCase();
 
+    // 2. Participant 모델에 데이터 저장 또는 업데이트 (upsert)
     const participant = await Participant.findOneAndUpdate(
-      { githubId: req.githubId },
+      { githubId: req.githubId }, // 찾는 조건
       {
         githubId: req.githubId,
         classYear: parsedClassYear,
         nickname: formattedNickname,
+        inputs: {},
+        stats: {},
+        results: {},
+        customization: {},
       },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
+      }
+    );
+
+    console.log(
+      `[Order SUCCESS] Participant ${req.githubId} updated/created with classYear: ${classYear}, nickname: ${formattedNickname}`
     );
 
     return res
@@ -81,9 +94,11 @@ router.post('/setUserInfo', checkVerification, async (req, res) => {
         ])
       );
   } catch (error) {
-    console.error('Error in /setUserInfo:', error.message);
-    if (error.name === 'CastError') return res.status(200).json(createKakaoResponse(COMMON_ERRORS.CAST_ERROR));
-    res.status(500).json(createKakaoResponse(WORKSHOP.INIT_ERROR));
+    console.error('Error in /api/workshop/setUserInfo endpoint:', error.message, error.stack);
+    if (error.name === 'CastError') {
+      return res.status(200).json(createKakaoResponse(COMMON_ERRORS.CAST_ERROR));
+    }
+    res.status(200).json(createKakaoResponse(WORKSHOP.INIT_ERROR));
   }
 });
 
