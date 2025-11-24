@@ -73,12 +73,11 @@ const WORKSHOP = {
       `===== 🏆 종합 등급 =====\n` +
       `당신의 등급은 [ ${grade.toUpperCase()} ] 입니다!\n` +
       `(총 ${score}점 획득)\n` +
-      `* 업적 1개당 5점씩 반영됩니다.`, //
-
-    // [말풍선 2: 업적 및 칭호]
-    `그리고 활동 기록에 따른 업적과 칭호입니다!\n\n===== ✨ 획득 업적 (${achievementMessage.count}개) =====\n${
-      achievementMessage.names || '없음'
-    }\n\n` + `===== ⭐ 획득 칭호 (${titleMessage.count}개) =====\n${titleMessage.names || '없음'}`,
+      // [말풍선 2: 업적 및 칭호]
+      `그리고 활동 기록에 따른 업적과 칭호입니다!\n\n===== ✨ 획득 업적 (${achievementMessage.count}개) =====\n${
+        achievementMessage.names || '없음'
+      }\n\n` +
+      `===== ⭐ 획득 칭호 (${titleMessage.count}개) =====\n${titleMessage.names || '없음'}`,
 
     // [말풍선 3: 칭호 설정 및 CTA]
     `현재 칭호는\n${equippedTitle}\n(으)로 설정되어 있습니다.\n\n` + `다른 칭호로 변경하시겠어요?`,
