@@ -93,6 +93,12 @@ router.post('/setUserInfo', checkVerification, async (req, res) => {
 router.post('/setHiddenInfo', checkVerification, loadParticipant, async (req, res) => {
   try {
     const { participant } = req;
+
+    if (!participant) {
+      console.error('[ERROR] Participant object is missing in req.body. Check loadParticipant middleware.');
+      return res.status(200).json(createKakaoResponse(COMMON_ERRORS.ORDER_ERROR));
+    }
+
     const {
       tdd_attempt,
       readme_master,
@@ -102,6 +108,11 @@ router.post('/setHiddenInfo', checkVerification, loadParticipant, async (req, re
       community_writer,
       community_answerer,
     } = req.body.action.params;
+
+    if (!participant.inputs) {
+      participant.inputs = {};
+      console.warn(`[SetHiddenInfo FIX] Initialized missing 'inputs' object for ${participant.githubId}.`);
+    }
 
     participant.inputs.hiddenAnswers = {
       tdd_attempt: tdd_attempt === 'Y',
@@ -147,7 +158,7 @@ router.post('/setHiddenInfo', checkVerification, loadParticipant, async (req, re
     })();
   } catch (error) {
     console.error('Error in /setHiddenInfo:', error.message);
-    res.status(500).json(createKakaoResponse(WORKSHOP.SET_HIDDEN_ERROR));
+    res.status(200).json(createKakaoResponse(WORKSHOP.SET_HIDDEN_ERROR));
   }
 });
 
