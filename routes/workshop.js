@@ -32,35 +32,17 @@ const { checkAnalysisCompleted, checkStatusForReview } = require('../middleware/
 
 function generateBadgeUrl(participant) {
   const compressedData = {
-    nm: participant.nickname, // nickname
-    id: participant.githubId, // githubId
-    cy: participant.classYear, // classYear
-    gr: participant.results.grade, // grade
-    sc: participant.results.score, // score
-    et: participant.customization.equippedTitle, // equippedTitle
-    rf: participant.customization.reflection, // reflection (회고)
+    nm: participant.nickname,
+    id: participant.githubId,
+    cy: participant.classYear,
+    gr: participant.results.grade,
+    sc: participant.results.score,
+    et: participant.customization.equippedTitle,
+    rf: participant.customization.reflection,
 
-    // 업적 (ID 목록만 전달)
+    tl: participant.results.titles,
+
     ac: participant.results.achievements,
-
-    // 통계 (수치만 전달)
-    st: {
-      cc: participant.stats.commitCount,
-      rc: participant.stats.reviewCount,
-      csm: participant.stats.commitStreakMax,
-      cmm: participant.stats.commitMonsterMax,
-      cwc: participant.stats.commitWeekendCount,
-      crc: participant.stats.commitRefactorCount,
-      cfc: participant.stats.commitFixCount,
-      rsc: participant.stats.reviewSelfCount,
-
-      po: participant.stats.prOpened ? 1 : 0,
-      no: participant.stats.nightowl ? 1 : 0,
-      eb: participant.stats.earlybird ? 1 : 0,
-      df: participant.stats.deadlineFighter ? 1 : 0,
-      cfd: participant.stats.commitFirstDay ? 1 : 0,
-      cld: participant.stats.commitLastDay ? 1 : 0,
-    },
   };
 
   const jsonString = JSON.stringify(compressedData);
